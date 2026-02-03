@@ -1,2 +1,0 @@
-# Digital-Land-Registration-Ownership-Verification
- A secure, efficient platform for land registration and ownership verification through digital technology. By leveraging blockchain, it enhances transparency, reduces fraud, and simplifies land transactions. Key features include user-friendly interfaces, real-time updates, and robust verification to ensure accurate, tamper-proof ownership records.
