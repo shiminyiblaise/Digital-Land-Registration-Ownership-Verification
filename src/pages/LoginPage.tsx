@@ -70,13 +70,6 @@ const LoginPage: React.FC = () => {
     setLoading(false);
   };
 
-  // Demo accounts info
-  const demoAccounts = [
-    { role: 'Admin', email: 'admin@landregistry.cm', pass: 'admin123' },
-    { role: 'Officer', email: 'officer@landregistry.cm', pass: 'officer123' },
-    { role: 'Seller', email: 'seller1@gmail.com', pass: 'seller123' },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-emerald-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -230,30 +223,6 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
         )}
-
-        {/* Demo Accounts */}
-        <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-amber-800 mb-2">Demo Accounts (for testing)</p>
-          <div className="space-y-2">
-            {demoAccounts.map(acc => (
-              <button
-                key={acc.role}
-                onClick={() => {
-                  setActiveTab('login');
-                  setLoginEmail(acc.email);
-                  setLoginPassword(acc.pass);
-                }}
-                className="w-full flex items-center justify-between p-2 bg-white rounded-lg text-left hover:bg-amber-100 transition-colors"
-              >
-                <div>
-                  <span className="text-xs font-semibold text-amber-900">{acc.role}</span>
-                  <p className="text-[10px] text-amber-600">{acc.email}</p>
-                </div>
-                <span className="text-[10px] text-amber-500">Click to fill</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
