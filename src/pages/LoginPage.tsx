@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/Navbar';
 import { Shield, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
@@ -79,24 +78,23 @@ const LoginPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="max-w-md mx-auto px-4 py-16">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-emerald-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-900 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">CamLand Registry</h1>
-          <p className="text-sm text-gray-500 mt-1">Digital Land Registration System</p>
+          <h1 className="text-2xl font-bold text-white">CamLand Registry</h1>
+          <p className="text-sm text-white/70 mt-1">Digital Land Registration System</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+        <div className="flex bg-white/10 backdrop-blur-sm rounded-xl p-1 mb-6">
           <button
             onClick={() => { setActiveTab('login'); setError(''); }}
             className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-              activeTab === 'login' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              activeTab === 'login' ? 'bg-white text-blue-900 shadow-sm' : 'text-white/70 hover:text-white'
             }`}
           >
             Sign In
@@ -104,7 +102,7 @@ const LoginPage: React.FC = () => {
           <button
             onClick={() => { setActiveTab('register'); setError(''); }}
             className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-              activeTab === 'register' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              activeTab === 'register' ? 'bg-white text-blue-900 shadow-sm' : 'text-white/70 hover:text-white'
             }`}
           >
             Create Account
