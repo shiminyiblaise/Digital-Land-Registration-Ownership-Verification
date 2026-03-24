@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -32,17 +32,12 @@ const VerifyLandPage: React.FC = () => {
     setError('');
     setSearched(true);
 
-    const { data, error: dbError } = await supabase
-      .from('lands')
-      .select('*')
-      .eq('land_code', queryCode)
-      .single();
-
-    if (dbError || !data) {
-      setLand(null);
-      setError('No land found with this code');
+    const result = await api.getLandById(queryCode);
+    if (result.land) {
+      setLand(result.land);
     } else {
-      setLand(data);
+      setError('Land not found. Please check the code and try again.');
+      setLand(null);
     }
     setLoading(false);
   };

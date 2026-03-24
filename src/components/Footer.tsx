@@ -6,7 +6,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -47,8 +47,17 @@ const Footer: React.FC = () => {
               <li><Link to="/marketplace" className="text-sm hover:text-white transition-colors">Land Marketplace</Link></li>
               <li><Link to="/verify" className="text-sm hover:text-white transition-colors">Verify Ownership</Link></li>
               <li><Link to="/register-land" className="text-sm hover:text-white transition-colors">Register Land</Link></li>
-              <li><Link to="/login" className="text-sm hover:text-white transition-colors">Seller Portal</Link></li>
-              <li><Link to="/login" className="text-sm hover:text-white transition-colors">Officer Portal</Link></li>
+            </ul>
+          </div>
+
+          {/* About */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">About</h3>
+            <ul className="space-y-2.5">
+              <li><Link to="/about" className="text-sm hover:text-white transition-colors">About CamLand</Link></li>
+              <li><Link to="/about" className="text-sm hover:text-white transition-colors">How It Works</Link></li>
+              <li><Link to="/about" className="text-sm hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link to="/about" className="text-sm hover:text-white transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
 

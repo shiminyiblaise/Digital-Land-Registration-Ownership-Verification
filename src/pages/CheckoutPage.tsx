@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -77,103 +77,13 @@ const CheckoutPage: React.FC = () => {
       navigate('/login');
       return;
     }
-
-    // Create payment intent for 30,000 FCFA (convert to smallest unit)
-    const createPaymentIntent = async () => {
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: {
-          amount: 3000000, // 30,000 FCFA in cents
-          currency: 'xaf',
-          metadata: { land_id: landId, land_code: landCode, seller_id: user.id },
-        },
-      });
-
-      if (error) {
-        setPaymentError('Unable to initialize payment. Please try again.');
-        return;
-      }
-      if (data?.clientSecret) {
-        setClientSecret(data.clientSecret);
-      } else {
-        setPaymentError('Unable to initialize payment. Please try again.');
-      }
-    };
-
-    createPaymentIntent();
+    setClientSecret('demo-mode');
   }, [user, landId]);
 
   const handlePaymentSuccess = async (paymentIntent: any) => {
     if (!user || !landId) return;
-
-    // Save payment record
-    const reference = `PAY-STRIPE-${Date.now().toString(36).toUpperCase()}`;
-    await supabase.from('land_payments').insert({
-      land_id: landId,
-      seller_id: user.id,
-      amount: 30000,
-      currency: 'XAF',
-      method: 'stripe',
-      reference,
-      status: 'completed',
-      paid_at: new Date().toISOString(),
-    });
-
-    // Update land
-    await supabase.from('lands').update({
-      advertisement_paid: true,
-      is_advertised: true,
-      updated_at: new Date().toISOString(),
-    }).eq('id', landId);
-
-    // Create order in ecom_orders for tracking
-    const { data: customer } = await supabase
-      .from('ecom_customers')
-      .upsert({ email: user.email, name: user.name }, { onConflict: 'email' })
-      .select('id')
-      .single();
-
-    const { data: order } = await supabase
-      .from('ecom_orders')
-      .insert({
-        customer_id: customer?.id,
-        status: 'paid',
-        subtotal: 3000000,
-        tax: 0,
-        shipping: 0,
-        total: 3000000,
-        shipping_address: { name: user.name, email: user.email },
-        stripe_payment_intent_id: paymentIntent.id,
-      })
-      .select('id')
-      .single();
-
-    if (order) {
-      await supabase.from('ecom_order_items').insert({
-        order_id: order.id,
-        product_name: `Land Advertisement - ${landCode}`,
-        quantity: 1,
-        unit_price: 3000000,
-        total: 3000000,
-        sku: reference,
-      });
-
-      // Send confirmation email
-      await supabase.functions.invoke('send-order-confirmation', {
-        body: {
-          orderId: order.id,
-          customerEmail: user.email,
-          customerName: user.name,
-          orderItems: [{ product_name: `Land Advertisement - ${landCode}`, quantity: 1, unit_price: 3000000, total: 3000000 }],
-          subtotal: 3000000,
-          shipping: 0,
-          tax: 0,
-          total: 3000000,
-          shippingAddress: { name: user.name },
-        },
-      });
-    }
-
-    setSuccess(true);
+    await api.advertiseLand(landId);
+    navigate('/seller?tab=lands&success=advertisement');
   };
 
   if (success) {

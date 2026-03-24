@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land, CAMEROON_REGIONS, CAMEROON_CITIES } from '@/lib/types';
 import LandCard from '@/components/LandCard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LandMapView from '@/components/LandMapView';
 import { Search, SlidersHorizontal, MapPin, X, ArrowUpDown, LayoutGrid, Map as MapIcon, Loader2 } from 'lucide-react';
-
-// Lazy-load the map component so Leaflet only loads when needed
-const LandMapView = lazy(() => import('@/components/LandMapView'));
 
 const MarketplacePage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -32,16 +30,9 @@ const MarketplacePage: React.FC = () => {
 
   const fetchLands = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('lands')
-      .select('*')
-      .in('status', ['approved', 'sold'])
-      .eq('is_advertised', true)
-      .eq('advertisement_paid', true)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setLands(data);
+    const result = await api.getMarketplace();
+    if (result.lands) {
+      setLands(result.lands);
     }
     setLoading(false);
   };
@@ -325,23 +316,14 @@ const MarketplacePage: React.FC = () => {
           </div>
         ) : viewMode === 'map' ? (
           /* ===== MAP VIEW ===== */
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center bg-white rounded-xl border border-gray-200 shadow-sm" style={{ height: '650px' }}>
-                <div className="text-center">
-                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">Loading map...</p>
-                </div>
-              </div>
-            }
-          >
+          <div className="flex items-center justify-center bg-white rounded-xl border border-gray-200 shadow-sm" style={{ height: '650px' }}>
             <LandMapView lands={filteredLands} />
-          </Suspense>
+          </div>
         ) : (
           /* ===== GRID VIEW ===== */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredLands.map(land => (
-              <LandCard key={land.id} land={land} />
+              <LandCard key={land._id} land={land} />
             ))}
           </div>
         )}

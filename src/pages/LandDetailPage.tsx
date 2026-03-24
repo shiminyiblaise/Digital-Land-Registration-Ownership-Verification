@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -20,14 +20,9 @@ const LandDetailPage: React.FC = () => {
     const fetchLand = async () => {
       if (!code) return;
       setLoading(true);
-      const { data, error } = await supabase
-        .from('lands')
-        .select('*')
-        .eq('land_code', code)
-        .single();
-
-      if (!error && data) {
-        setLand(data);
+      const result = await api.getLandById(code);
+      if (result.land) {
+        setLand(result.land);
       }
       setLoading(false);
     };

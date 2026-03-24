@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land, LandPayment } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -11,7 +11,7 @@ import { MapPin, CreditCard, FileText, CheckCircle, XCircle, Clock, Eye, Loader2
 const formatPrice = (price: number) => new Intl.NumberFormat('fr-CM').format(price) + ' FCFA';
 
 const SellerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [lands, setLands] = useState<Land[]>([]);
   const [payments, setPayments] = useState<LandPayment[]>([]);
@@ -21,28 +21,33 @@ const SellerDashboard: React.FC = () => {
   const [markingSold, setMarkingSold] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) { navigate('/login'); return; }
     fetchData();
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchData = async () => {
     if (!user) return;
     setLoading(true);
-    const [landsRes, paymentsRes] = await Promise.all([
-      supabase.from('lands').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('land_payments').select('*').eq('seller_id', user.id).order('created_at', { ascending: false }),
-    ]);
-    if (landsRes.data) setLands(landsRes.data);
-    if (paymentsRes.data) setPayments(paymentsRes.data);
+    console.log('Fetching data for user:', user.email, user.role);
+    try {
+      const [landsRes, transactionsRes] = await Promise.all([
+        api.getMyLands(),
+        api.getTransactions(),
+      ]);
+      console.log('Lands response:', landsRes);
+      console.log('Transactions response:', transactionsRes);
+      if (landsRes.lands) setLands(landsRes.lands);
+      if (transactionsRes.transactions) setPayments(transactionsRes.transactions);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
     setLoading(false);
   };
 
   const handleMarkSold = async (landId: string) => {
     setMarkingSold(landId);
-    await supabase.from('lands').update({
-      status: 'sold',
-      sold_at: new Date().toISOString(),
-    }).eq('id', landId);
+    await api.updateLand(landId, { status: 'sold', sold_at: new Date().toISOString() });
     await fetchData();
     setMarkingSold(null);
   };
@@ -128,7 +133,7 @@ const SellerDashboard: React.FC = () => {
               </div>
             ) : (
               lands.map(land => (
-                <div key={land.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                <div key={land._id} className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     {/* Image */}
                     <div className="w-full md:w-32 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
@@ -162,7 +167,7 @@ const SellerDashboard: React.FC = () => {
                       </button>
                       {!land.advertisement_paid && land.status !== 'rejected' && (
                         <button
-                          onClick={() => setPaymentModal({ open: true, landId: land.id, landCode: land.land_code })}
+                          onClick={() => setPaymentModal({ open: true, landId: land._id, landCode: land.land_code })}
                           className="px-3 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-500"
                         >
                           Pay 30,000 FCFA
@@ -170,11 +175,11 @@ const SellerDashboard: React.FC = () => {
                       )}
                       {land.status === 'approved' && land.advertisement_paid && (
                         <button
-                          onClick={() => handleMarkSold(land.id)}
-                          disabled={markingSold === land.id}
+                          onClick={() => handleMarkSold(land._id)}
+                          disabled={markingSold === land._id}
                           className="px-3 py-2 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 disabled:opacity-50"
                         >
-                          {markingSold === land.id ? 'Marking...' : 'Mark as Sold'}
+                          {markingSold === land._id ? 'Marking...' : 'Mark as Sold'}
                         </button>
                       )}
                     </div>
