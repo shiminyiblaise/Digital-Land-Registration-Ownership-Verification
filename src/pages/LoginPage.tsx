@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      const dest = user.role === 'admin' ? '/admin' : user.role === 'officer' ? '/officer' : '/seller';
+      const dest = user.role === 'admin' ? '/admin' : user.role === 'officer' ? '/officer' : user.role === 'seller' ? '/seller' : '/buyer';
       navigate(dest);
     }
   }, [user, navigate]);

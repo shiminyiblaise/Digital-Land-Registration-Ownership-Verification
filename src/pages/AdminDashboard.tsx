@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land, LandPayment } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -10,7 +10,7 @@ import { Shield, CheckCircle, XCircle, Clock, MapPin, Eye, Trash2, BarChart3, Us
 const formatPrice = (price: number) => new Intl.NumberFormat('fr-CM').format(price) + ' FCFA';
 
 const AdminDashboard: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [lands, setLands] = useState<Land[]>([]);
   const [payments, setPayments] = useState<LandPayment[]>([]);
@@ -18,57 +18,77 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'lands' | 'payments' | 'ads'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Ad management state
   const [adTitle, setAdTitle] = useState('');
   const [adContent, setAdContent] = useState('');
   const [ads, setAds] = useState<{id: number; title: string; content: string; active: boolean; createdAt: string}[]>([]);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user || !isAdmin) {
       navigate('/login');
       return;
     }
     fetchData();
-    // Load ads from localStorage
     const savedAds = localStorage.getItem('land_ads');
     if (savedAds) setAds(JSON.parse(savedAds));
-  }, [user, isAdmin]);
+  }, [user, isAdmin, authLoading]);
 
   const fetchData = async () => {
     setLoading(true);
-    const [landsRes, paymentsRes] = await Promise.all([
-      supabase.from('lands').select('*').order('created_at', { ascending: false }),
-      supabase.from('land_payments').select('*').order('created_at', { ascending: false }),
-    ]);
-    if (landsRes.data) setLands(landsRes.data);
-    if (paymentsRes.data) setPayments(paymentsRes.data);
+    try {
+      const [landsRes, transactionsRes, statsRes] = await Promise.all([
+        api.getLands(),
+        api.getTransactions(),
+        api.getStats(),
+      ]);
+      if (landsRes.lands) setLands(landsRes.lands);
+      if (transactionsRes.transactions) setPayments(transactionsRes.transactions);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
     setLoading(false);
   };
 
   const handleApprove = async (landId: string) => {
     setActionLoading(landId);
-    await supabase.from('lands').update({
-      status: 'approved',
-      approved_by: user?.id,
-      approved_at: new Date().toISOString(),
-    }).eq('id', landId);
-    await fetchData();
+    try {
+      const result = await api.approveLand(landId);
+      if (result.error) {
+        alert('Error: ' + result.error);
+      } else {
+        await fetchData();
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
     setActionLoading(null);
   };
 
   const handleReject = async (landId: string) => {
     setActionLoading(landId);
-    await supabase.from('lands').update({ status: 'rejected' }).eq('id', landId);
-    await fetchData();
+    try {
+      const result = await api.rejectLand(landId);
+      if (result.error) {
+        alert('Error: ' + result.error);
+      } else {
+        await fetchData();
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
     setActionLoading(null);
   };
 
   const handleMarkSold = async (landId: string) => {
     setActionLoading(landId);
-    await supabase.from('lands').update({
-      status: 'sold',
-      sold_at: new Date().toISOString(),
-    }).eq('id', landId);
+    await api.updateLand(landId, { status: 'sold', sold_at: new Date().toISOString() });
+    await fetchData();
+    setActionLoading(null);
+  };
+
+  const handleMarkUnsold = async (landId: string) => {
+    setActionLoading(landId);
+    await api.updateLand(landId, { status: 'approved', sold_at: null });
     await fetchData();
     setActionLoading(null);
   };
@@ -215,7 +235,7 @@ const AdminDashboard: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {lands.map(land => (
-                    <tr key={land.id} className="hover:bg-gray-50">
+                    <tr key={land._id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-mono font-medium text-gray-900">{land.land_code}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{land.owner_name}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{land.city}, {land.region}</td>
@@ -245,15 +265,15 @@ const AdminDashboard: React.FC = () => {
                           {land.status === 'pending' && (
                             <>
                               <button
-                                onClick={() => handleApprove(land.id)}
-                                disabled={actionLoading === land.id}
+                                onClick={() => handleApprove(land._id)}
+                                disabled={actionLoading === land._id}
                                 className="p-1.5 hover:bg-emerald-50 rounded-lg" title="Approve"
                               >
-                                {actionLoading === land.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-600" />}
+                                {actionLoading === land._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-600" />}
                               </button>
                               <button
-                                onClick={() => handleReject(land.id)}
-                                disabled={actionLoading === land.id}
+                                onClick={() => handleReject(land._id)}
+                                disabled={actionLoading === land._id}
                                 className="p-1.5 hover:bg-red-50 rounded-lg" title="Reject"
                               >
                                 <XCircle className="w-4 h-4 text-red-600" />
@@ -262,11 +282,20 @@ const AdminDashboard: React.FC = () => {
                           )}
                           {land.status === 'approved' && (
                             <button
-                              onClick={() => handleMarkSold(land.id)}
-                              disabled={actionLoading === land.id}
+                              onClick={() => handleMarkSold(land._id)}
+                              disabled={actionLoading === land._id}
                               className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-medium rounded-lg hover:bg-red-100"
                             >
                               Mark Sold
+                            </button>
+                          )}
+                          {land.status === 'sold' && (
+                            <button
+                              onClick={() => handleMarkUnsold(land._id)}
+                              disabled={actionLoading === land._id}
+                              className="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-medium rounded-lg hover:bg-emerald-100"
+                            >
+                              Mark Unsold
                             </button>
                           )}
                         </div>

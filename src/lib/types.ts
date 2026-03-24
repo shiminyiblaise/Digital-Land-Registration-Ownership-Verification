@@ -7,7 +7,7 @@ export interface LandUser {
   name: string;
   phone?: string;
   id_number?: string;
-  role: 'admin' | 'officer' | 'seller';
+  role: 'admin' | 'officer' | 'seller' | 'buyer';
   profile_photo?: string;
   facial_photo?: string;
   is_verified: boolean;
@@ -16,7 +16,8 @@ export interface LandUser {
 }
 
 export interface Land {
-  id: string;
+  _id: string;
+  id?: string;
   land_code: string;
   owner_id?: string;
   owner_name: string;

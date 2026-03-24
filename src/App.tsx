@@ -14,6 +14,7 @@ import VerifyLandPage from "./pages/VerifyLandPage";
 import RegisterLandPage from "./pages/RegisterLandPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import SellerDashboard from "./pages/SellerDashboard";
+import BuyerDashboard from "./pages/BuyerDashboard";
 import OfficerDashboard from "./pages/OfficerDashboard";
 import CheckoutPage from "./pages/CheckoutPage";
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/register-land" element={<RegisterLandPage />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/seller" element={<SellerDashboard />} />
+              <Route path="/buyer" element={<BuyerDashboard />} />
               <Route path="/officer" element={<OfficerDashboard />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="*" element={<NotFound />} />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Building2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { ADVERTISEMENT_FEE, PaymentMethod } from '@/lib/types';
 
 interface PaymentModalProps {
@@ -54,40 +54,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, landId, la
     const isSuccess = Math.random() > 0.1;
 
     if (isSuccess) {
-      const reference = generateReference();
-      // Save payment to database
-      const { error: dbError } = await supabase.from('land_payments').insert({
-        land_id: landId,
-        seller_id: sellerId,
-        amount: ADVERTISEMENT_FEE,
-        currency: 'XAF',
-        method: selectedMethod,
-        reference,
-        status: 'completed',
-        paid_at: new Date().toISOString(),
-      });
-
-      if (!dbError) {
-        // Update land to advertised
-        await supabase.from('lands').update({
-          advertisement_paid: true,
-          is_advertised: true,
-          updated_at: new Date().toISOString(),
-        }).eq('id', landId);
-      }
-
+      await api.advertiseLand(landId);
       setStep('success');
     } else {
-      // Save failed payment
-      await supabase.from('land_payments').insert({
-        land_id: landId,
-        seller_id: sellerId,
-        amount: ADVERTISEMENT_FEE,
-        currency: 'XAF',
-        method: selectedMethod,
-        reference: generateReference(),
-        status: 'failed',
-      });
       setStep('failed');
     }
   };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -10,7 +10,7 @@ import { Shield, CheckCircle, XCircle, Clock, Eye, Loader2, Camera, IdCard, File
 const formatPrice = (price: number) => new Intl.NumberFormat('fr-CM').format(price) + ' FCFA';
 
 const OfficerDashboard: React.FC = () => {
-  const { user, isOfficer } = useAuth();
+  const { user, isOfficer, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [lands, setLands] = useState<Land[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,14 +23,19 @@ const OfficerDashboard: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user || !isOfficer) { navigate('/login'); return; }
     fetchData();
-  }, [user, isOfficer]);
+  }, [user, isOfficer, authLoading]);
 
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase.from('lands').select('*').order('created_at', { ascending: false });
-    if (data) setLands(data);
+    try {
+      const result = await api.getPendingLands();
+      if (result.lands) setLands(result.lands);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
     setLoading(false);
   };
 
@@ -38,28 +43,20 @@ const OfficerDashboard: React.FC = () => {
     if (!selectedLand || !user) return;
     setActionLoading(true);
 
-    // Create verification record
-    await supabase.from('land_verifications').insert({
-      land_id: selectedLand.id,
-      officer_id: user.id,
+    await api.verifyLand({
+      land_id: selectedLand._id,
       facial_match: facialMatch,
       id_verified: idVerified,
       document_verified: docVerified,
       notes: verifyNotes,
-      status: 'verified',
-      verified_at: new Date().toISOString(),
     });
 
-    // Approve the land
-    await supabase.from('lands').update({
-      status: 'approved',
-      approved_by: user.id,
-      approved_at: new Date().toISOString(),
-    }).eq('id', selectedLand.id);
-
-    setSelectedLand(null);
-    resetVerifyForm();
     await fetchData();
+    setSelectedLand(null);
+    setVerifyNotes('');
+    setFacialMatch(false);
+    setIdVerified(false);
+    setDocVerified(false);
     setActionLoading(false);
   };
 
@@ -67,17 +64,13 @@ const OfficerDashboard: React.FC = () => {
     if (!selectedLand || !user) return;
     setActionLoading(true);
 
-    await supabase.from('land_verifications').insert({
-      land_id: selectedLand.id,
-      officer_id: user.id,
+    await api.verifyLand({
+      land_id: selectedLand._id,
       facial_match: facialMatch,
       id_verified: idVerified,
       document_verified: docVerified,
       notes: verifyNotes,
-      status: 'rejected',
     });
-
-    await supabase.from('lands').update({ status: 'rejected' }).eq('id', selectedLand.id);
 
     setSelectedLand(null);
     resetVerifyForm();
@@ -163,10 +156,10 @@ const OfficerDashboard: React.FC = () => {
             ) : (
               filteredLands.map(land => (
                 <button
-                  key={land.id}
+                  key={land._id}
                   onClick={() => { setSelectedLand(land); resetVerifyForm(); }}
                   className={`w-full text-left bg-white rounded-xl border p-4 transition-all hover:shadow-md ${
-                    selectedLand?.id === land.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'
+                    selectedLand?._id === land._id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'
                   }`}
                 >
                   <div className="flex items-center gap-3">

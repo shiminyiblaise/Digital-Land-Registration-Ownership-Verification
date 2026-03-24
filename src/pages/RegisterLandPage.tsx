@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { CAMEROON_REGIONS, CAMEROON_CITIES } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -94,12 +94,9 @@ const RegisterLandPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const landCode = generateLandCode();
       const images = imageUrl ? [imageUrl] : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800'];
 
-      const { error: dbError } = await supabase.from('lands').insert({
-        land_code: landCode,
-        owner_id: user.id,
+      const result = await api.registerLand({
         owner_name: ownerName,
         owner_phone: ownerPhone,
         owner_email: ownerEmail,
@@ -114,13 +111,10 @@ const RegisterLandPage: React.FC = () => {
         images,
         registration_type: regType,
         property_type: propertyType,
-        status: 'pending',
-        is_advertised: false,
-        advertisement_paid: false,
         map_location: { lat: 0, lng: 0, address: `${city}, ${region}` },
       });
 
-      if (dbError) throw new Error(dbError.message);
+      if (result.error) throw new Error(result.error);
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed');

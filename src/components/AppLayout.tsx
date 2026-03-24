@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { Land } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -27,16 +27,10 @@ const AppLayout: React.FC = () => {
   }, []);
 
   const fetchFeaturedLands = async () => {
-    const { data } = await supabase
-      .from('lands')
-      .select('*')
-      .eq('status', 'approved')
-      .eq('is_advertised', true)
-      .eq('advertisement_paid', true)
-      .order('created_at', { ascending: false })
-      .limit(6);
-
-    if (data) setFeaturedLands(data);
+    const result = await api.getMarketplace();
+    if (result.lands) {
+      setFeaturedLands(result.lands.slice(0, 6));
+    }
     setLoading(false);
   };
 
@@ -116,7 +110,7 @@ const AppLayout: React.FC = () => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredLands.map(land => (
-                <LandCard key={land.id} land={land} />
+                <LandCard key={land._id} land={land} />
               ))}
             </div>
           )}

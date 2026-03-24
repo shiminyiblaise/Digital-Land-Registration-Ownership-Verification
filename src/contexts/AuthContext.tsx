@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { LandUser } from '@/lib/types';
 
 interface AuthContextType {
@@ -11,6 +11,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isOfficer: boolean;
   isSeller: boolean;
+  isBuyer: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isOfficer: false,
   isSeller: false,
+  isBuyer: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -31,7 +33,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for saved session
     const savedUser = localStorage.getItem('land_user');
     if (savedUser) {
       try {
@@ -45,19 +46,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase
-        .from('land_users')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .eq('password_hash', password)
-        .single();
-
-      if (error || !data) {
-        return { success: false, error: 'Invalid email or password' };
+      const data = await api.login(email, password);
+      if (data.error) {
+        return { success: false, error: data.error };
       }
-
-      setUser(data);
-      localStorage.setItem('land_user', JSON.stringify(data));
+      setUser(data.user);
+      localStorage.setItem('land_user', JSON.stringify(data.user));
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed' };
@@ -66,36 +60,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (regData: { email: string; password: string; name: string; phone: string; role?: string }) => {
     try {
-      // Check if email exists
-      const { data: existing } = await supabase
-        .from('land_users')
-        .select('id')
-        .eq('email', regData.email.toLowerCase().trim())
-        .single();
-
-      if (existing) {
-        return { success: false, error: 'Email already registered' };
+      const data = await api.register(regData);
+      if (data.error) {
+        return { success: false, error: data.error };
       }
-
-      const { data, error } = await supabase
-        .from('land_users')
-        .insert({
-          email: regData.email.toLowerCase().trim(),
-          password_hash: regData.password,
-          name: regData.name,
-          phone: regData.phone,
-          role: regData.role || 'seller',
-          is_verified: false,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      setUser(data);
-      localStorage.setItem('land_user', JSON.stringify(data));
+      setUser(data.user);
+      localStorage.setItem('land_user', JSON.stringify(data.user));
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Registration failed' };
@@ -105,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setUser(null);
     localStorage.removeItem('land_user');
+    localStorage.removeItem('auth_token');
   };
 
   return (
@@ -118,6 +89,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAdmin: user?.role === 'admin',
         isOfficer: user?.role === 'officer',
         isSeller: user?.role === 'seller',
+        isBuyer: user?.role === 'buyer',
       }}
     >
       {children}
